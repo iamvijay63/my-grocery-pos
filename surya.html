@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Store POS & ERP</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: { extend: { fontFamily: { sans: ['Inter', 'sans-serif'] }, colors: { appBg: '#12121a', cardBg: '#1e1e2d', primary: '#0cdb9e', textMuted: '#8b8b9b', accentOrange: '#f59e0b', accentPink: '#ec4899', accentRed: '#f43f5e', accentBlue: '#3b82f6' } } }
+        }
+    </script>
+    <style>
+        ::-webkit-scrollbar { display: none; }
+        body { -webkit-tap-highlight-color: transparent; background-color: #12121a; color: white; }
+        .view-section { display: none !important; }
+        .view-section.active { display: block !important; }
+        .view-section.active-flex { display: flex !important; }
+        input[type="number"]::-webkit-inner-spin-button, input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        .modal-sheet { transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); transform: translateY(100%); }
+        .modal-open { transform: translateY(0) !important; }
+        .btn-check { border: 2px solid transparent; transition: all 0.2s; }
+        .btn-check.active { background-color: #0cdb9e; color: #12121a; border-color: #0cdb9e; }
+        .btn-check.inactive { background-color: transparent; color: white; border-color: #8b8b9b; }
+        .hide-scroll::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="h-screen flex flex-col overflow-hidden font-sans">
+
+    <div id="topCashCard" class="px-4 pt-4 pb-2 shrink-0 z-20 bg-appBg">
+        <div class="bg-gradient-to-br from-primary to-[#09a879] rounded-2xl p-5 shadow-lg flex items-center gap-4">
+            <div class="bg-white/20 p-3 rounded-xl"><span class="text-2xl">💸</span></div>
+            <div class="flex-1">
+                <div class="text-white/80 text-xs font-medium mb-1">Cash in Hand</div>
+                <div class="text-white text-3xl font-extrabold tracking-tight" id="lblCashInHand">₹0.00</div>
+            </div>
+            <button onclick="openTxModal('expense')" class="bg-white/20 hover:bg-white/30 text-white text-xs font-bold px-3 py-2 rounded-lg transition-colors shadow">Add Expense</button>
+        </div>
+    </div>
+
+    <main class="flex-1 overflow-y-auto relative pb-32" id="mainScroll">
+        
+        <section id="view-pos" class="view-section active px-4">
+            <h2 class="text-xl font-bold mb-4">Sales POS</h2>
+            <div class="flex gap-3 mb-4">
+                <div class="flex-1">
+                    <label class="text-[10px] text-textMuted ml-1">Customer Category</label>
+                    <select id="posCategory" onchange="filterPosCustomers()" class="w-full bg-cardBg border border-gray-800 rounded-xl p-3 text-sm text-white font-medium outline-none">
+                        <option value="all">≡ All Categories</option>
+                    </select>
+                </div>
+                <div class="flex-1">
+                    <label class="text-[10px] text-textMuted ml-1">Customer</label>
+                    <button onclick="openPartySearch('sale')" class="w-full bg-cardBg border border-gray-800 rounded-xl p-3 text-sm text-primary font-medium outline-none text-left flex justify-between items-center">
+                        <span id="posCustomerName" class="truncate">Walk-in Customer</span>
+                        <span class="text-textMuted text-xs">▼</span>
+                    </button>
+                </div>
+            </div>
+            <div id="posGrid" class="grid grid-cols-2 md:grid-cols-3 gap-4"></div>
+        </section>
+
+        <section id="view-purchase" class="view-section px-4">
+            <h2 class="text-xl font-bold mb-4 text-accentOrange">Purchase Entry</h2>
+            <div class="flex gap-3 mb-4">
+                <div class="flex-1">
+                    <label class="text-[10px] text-textMuted ml-1">Supplier</label>
+                    <button onclick="openPartySearch('purchase')" class="w-full bg-cardBg border border-gray-800 rounded-xl p-3 text-sm text-accentOrange font-medium outline-none text-left flex justify-between items-center">
+                        <span id="purSupplierName" class="truncate">Select Supplier</span>
+                        <span class="text-textMuted text-xs">▼</span>
+                    </button>
+                </div>
+            </div>
+            <div id="purGrid" class="grid grid-cols-2 md:grid-cols-3 gap-4"></div>
+        </section>
+
+        <section id="view-receipts" class="view-section flex-col bg-[#12121a] min-h-full">
+            <div class="p-4 shrink-0 border-b border-gray-800">
+                <div class="flex items-center gap-4 mb-4">
+                    <h2 class="text-xl font-bold text-white">Batch Record Receipt</h2>
+                </div>
+                <div class="flex gap-3 mb-4">
+                    <div class="flex-1">
+                        <label class="text-[10px] text-textMuted ml-1">Filter Category</label>
+                        <select id="rectCategory" onchange="renderBatchReceipts()" class="w-full bg-[#1e1e2d] border border-gray-700 rounded-lg p-3 text-sm text-primary outline-none">
+                            <option value="all">≡ All</option>
+                        </select>
+                    </div>
+                    <div class="flex-1 bg-[#2a1f1a] border border-[#5c3e2b] rounded-lg p-3 flex flex-col justify-center">
+                        <span class="text-[10px] text-textMuted">Total Receivable</span>
+                        <span class="text-accentOrange font-bold text-lg" id="rectTotalDue">₹0.00</span>
+                    </div>
+                </div>
+                <div class="flex gap-3 mb-2">
+                    <div class="flex-1 bg-[#1e1e2d] border border-gray-700 rounded-lg p-3 flex items-center gap-2">
+                        <span class="text-primary">📅</span>
+                        <input type="date" id="rectDate" class="bg-transparent text-sm text-white outline-none w-full">
+                    </div>
+                    <div class="flex-1 bg-[#1e1e2d] border border-gray-700 rounded-lg p-3 flex items-center gap-2">
+                        <span class="text-accentBlue">💳</span>
+                        <select id="rectMode" class="bg-transparent text-sm text-white outline-none w-full">
+                            <option>Cash</option><option>Bank</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="px-4 py-4 space-y-3 mb-20" id="batchReceiptList"></div>
+
+            <div class="bg-[#1e1e2d] border-t border-gray-800 p-4 flex justify-between items-center shrink-0 fixed bottom-16 inset-x-0 z-10">
+                <div>
+                    <div class="text-[10px] text-textMuted">Total Receiving</div>
+                    <div class="text-primary font-bold text-xl" id="rectTotalRecv">₹0.00</div>
+                </div>
+                <button onclick="saveBatchReceipts()" class="bg-gray-600 text-gray-300 px-6 py-3 rounded-lg font-bold text-sm shadow-lg transition-colors" id="btnSaveRect">
+                    ✔ SAVE ENTRIES
+                </button>
+            </div>
+        </section>
+
+        <section id="view-management" class="view-section px-4 flex-col h-full">
+            <h2 class="text-xl font-bold mb-4">System Management</h2>
+            <div class="flex gap-2 mb-4 shrink-0 overflow-x-auto hide-scroll pb-2">
+                <button onclick="switchMgmtTab('items')" id="tabItems" class="px-4 py-2 rounded-xl text-sm font-bold bg-primary text-appBg shrink-0 transition-colors">Items</button>
+                <button onclick="switchMgmtTab('categories')" id="tabCategories" class="px-4 py-2 rounded-xl text-sm font-bold text-textMuted shrink-0 transition-colors">Categories</button>
+                <button onclick="switchMgmtTab('customers')" id="tabCustomers" class="px-4 py-2 rounded-xl text-sm font-bold text-textMuted shrink-0 transition-colors">Customers</button>
+                <button onclick="switchMgmtTab('suppliers')" id="tabSuppliers" class="px-4 py-2 rounded-xl text-sm font-bold text-textMuted shrink-0 transition-colors">Suppliers</button>
+            </div>
+            <div class="bg-cardBg rounded-xl p-3 flex justify-between items-center mb-4 border border-gray-800" id="mgmtSummaryBar">
+                <span class="text-sm font-bold text-textMuted" id="mgmtCountLabel">Total Entries: 0</span>
+                <button onclick="openDynamicAddModal()" class="bg-primary text-appBg px-3 py-1.5 rounded font-bold text-sm shadow">+ Add New</button>
+            </div>
+            <div id="mgmtList" class="space-y-3 flex-1 pb-4"></div>
+        </section>
+
+        <section id="view-reports" class="view-section flex-col bg-appBg">
+            <div id="reportFilters" class="p-4">
+                <h2 class="text-xl font-bold text-white mb-6">Financial Reports & Logs</h2>
+                <div class="grid grid-cols-2 gap-4 mb-6">
+                    <div class="bg-cardBg p-4 rounded-xl border border-gray-800"><div class="text-textMuted text-[10px] mb-1">Total Receivable</div><div class="text-accentOrange text-lg font-bold" id="repReceivable">₹0.00</div></div>
+                    <div class="bg-cardBg p-4 rounded-xl border border-gray-800"><div class="text-textMuted text-[10px] mb-1">Total Payable</div><div class="text-accentPink text-lg font-bold" id="repPayable">₹0.00</div></div>
+                    <div class="bg-cardBg p-4 rounded-xl border border-gray-800"><div class="text-textMuted text-[10px] mb-1">Total Expenses</div><div class="text-white text-lg font-bold" id="repExpenses">₹0.00</div></div>
+                    <div class="bg-cardBg p-4 rounded-xl border border-gray-800"><div class="text-textMuted text-[10px] mb-1">Net Profit</div><div class="text-primary text-lg font-bold" id="repProfit">₹0.00</div></div>
+                </div>
+                <h3 class="font-bold text-white mb-3">Quick Actions</h3>
+                <div class="grid grid-cols-2 gap-3 mb-6">
+                    <button onclick="openTxModal('payment')" class="bg-cardBg border border-gray-800 p-3 rounded-xl flex items-center justify-center gap-2 text-sm font-bold text-white hover:border-accentPink transition-colors"><span class="text-accentPink">⬆️</span> Supplier Payment</button>
+                    <button onclick="switchView('view-receipts')" class="bg-cardBg border border-gray-800 p-3 rounded-xl flex items-center justify-center gap-2 text-sm font-bold text-white hover:border-primary transition-colors"><span class="text-primary">⬇️</span> Batch Receipt</button>
+                </div>
+                <div class="bg-cardBg p-5 rounded-2xl border border-gray-800 space-y-4 mb-6">
+                    <div>
+                        <label class="text-[10px] text-textMuted block mb-1">Transaction Type</label>
+                        <select id="fltType" class="w-full bg-appBg border border-gray-800 rounded-xl p-3 text-sm text-white outline-none">
+                            <option value="all">All Transactions</option><option value="Sale">Sales Only</option><option value="Receipt">Receipts</option>
+                            <option value="Purchase">Purchases</option><option value="Payment">Payments</option><option value="Expense">Expenses</option>
+                        </select>
+                    </div>
+                    <button onclick="showReportLog()" class="w-full bg-primary text-appBg font-bold py-4 rounded-xl mt-4 shadow-lg">View Full Ledger</button>
+                </div>
+                <div class="bg-[#2a171a] p-5 rounded-2xl border border-accentRed/30 space-y-4">
+                    <h3 class="font-bold text-accentRed flex items-center gap-2"><span>⚠️</span> Data Management</h3>
+                    <button onclick="exportBackup()" class="w-full bg-appBg border border-gray-700 text-white font-bold py-3 rounded-xl text-sm">Download Backup (JSON)</button>
+                    <button onclick="resetTransactions()" class="w-full bg-accentRed text-white font-bold py-3 rounded-xl text-sm shadow">Factory Reset Transactions</button>
+                    <p class="text-[9px] text-gray-400 text-center">Resetting clears all logs, cash, and balances. Items and Categories are preserved.</p>
+                </div>
+            </div>
+            <div id="reportLog" class="hidden flex-1 flex flex-col p-4">
+                <div class="flex items-center gap-3 mb-4 shrink-0"><button onclick="document.getElementById('reportLog').classList.add('hidden'); document.getElementById('reportFilters').classList.remove('hidden');" class="text-primary text-2xl">←</button><h2 class="text-xl font-bold text-white">Transaction Log</h2></div>
+                <div id="logList" class="space-y-3 pb-24"></div>
+            </div>
+        </section>
+    </main>
+
+    <nav class="fixed bottom-0 inset-x-0 bg-appBg border-t border-gray-800 p-2 flex justify-around items-center z-30 h-16" id="bottomNav">
+        <button onclick="switchView('view-pos')" id="nav-view-pos" class="nav-btn text-primary flex flex-col items-center p-2 transition-colors"><span class="text-xl mb-1">🛒</span><span class="text-[10px] font-medium">Sales</span></button>
+        <button onclick="switchView('view-purchase')" id="nav-view-purchase" class="nav-btn text-textMuted flex flex-col items-center p-2 transition-colors"><span class="text-xl mb-1">📦</span><span class="text-[10px] font-medium">Buy</span></button>
+        <button onclick="switchView('view-receipts')" id="nav-view-receipts" class="nav-btn text-textMuted flex flex-col items-center p-2 transition-colors"><span class="text-xl mb-1">⬇️</span><span class="text-[10px] font-medium">Receipt</span></button>
+        <button onclick="switchView('view-management')" id="nav-view-management" class="nav-btn text-textMuted flex flex-col items-center p-2 transition-colors"><span class="text-xl mb-1">⚙️</span><span class="text-[10px] font-medium">Manage</span></button>
+        <button onclick="switchView('view-reports')" id="nav-view-reports" class="nav-btn text-textMuted flex flex-col items-center p-2 transition-colors"><span class="text-xl mb-1">📊</span><span class="text-[10px] font-medium">Reports</span></button>
+    </nav>
+
+    <button onclick="openCart('sale')" id="btnFabCart" class="fixed bottom-20 left-1/2 -translate-x-1/2 bg-primary text-appBg px-6 py-3 rounded-full font-bold shadow-[0_5px_15px_rgba(12,219,158,0.4)] hidden z-20 flex items-center gap-3">
+        <span>Sale Cart</span><span id="fabQty" class="bg-appBg text-primary w-6 h-6 rounded-full flex items-center justify-center text-xs">0</span>
+    </button>
+    <button onclick="openCart('purchase')" id="btnFabPurCart" class="fixed bottom-20 left-1/2 -translate-x-1/2 bg-accentOrange text-appBg px-6 py-3 rounded-full font-bold shadow-[0_5px_15px_rgba(245,158,11,0.4)] hidden z-20 flex items-center gap-3">
+        <span>Buy Cart</span><span id="fabPurQty" class="bg-appBg text-accentOrange w-6 h-6 rounded-full flex items-center justify-center text-xs">0</span>
+    </button>
+
+    <div id="overlay" onclick="closeAllModals()" class="fixed inset-0 bg-black/80 z-40 hidden opacity-0 transition-opacity"></div>
+
+    <div id="searchPartyModal" class="fixed inset-x-0 bottom-0 bg-cardBg rounded-t-[30px] z-50 modal-sheet h-[80vh] flex flex-col">
+        <div class="p-5 flex justify-between items-center shrink-0 border-b border-gray-800/50">
+            <h2 class="text-xl font-bold text-white" id="spmTitle">Select Customer</h2>
+            <button onclick="closeAllModals()" class="text-gray-400 bg-gray-800 rounded-full w-8 h-8 flex items-center justify-center text-xl font-bold">✕</button>
+        </div>
+        <div class="p-4 shrink-0">
+            <input type="text" id="spmSearch" oninput="renderPartySearchList()" placeholder="Search name..." class="w-full bg-appBg border border-gray-800 rounded-xl p-3 text-white outline-none focus:border-primary transition-colors">
+        </div>
+        <div id="spmList" class="flex-1 overflow-y-auto px-4 pb-4 space-y-2 hide-scroll"></div>
+    </div>
+
+    <div id="cartModal" class="fixed inset-x-0 bottom-0 bg-cardBg rounded-t-[30px] z-50 modal-sheet h-[85vh] flex flex-col">
+        <div class="px-5 pt-5 pb-2 shrink-0 border-b border-gray-800/50 flex justify-between items-start">
+            <div>
+                <h2 class="text-2xl font-bold text-white" id="cartTitle">Cart</h2>
+                <p class="text-xs text-textMuted mt-1" id="cartPartyName"></p>
+            </div>
+            <button onclick="closeAllModals()" class="text-gray-400 bg-gray-800 rounded-full w-8 h-8 flex items-center justify-center text-xl font-bold mt-1">✕</button>
+        </div>
+        
+        <div class="px-5 py-2 flex text-[10px] text-textMuted uppercase font-bold border-b border-gray-800">
+            <div class="flex-1">Item</div><div class="w-16 text-center">Qty</div><div class="w-16 text-right">Total</div>
+        </div>
+
+        <div id="cartItemsList" class="flex-1 overflow-y-auto px-5 py-2 space-y-2 hide-scroll"></div>
+        
+        <div class="px-5 pb-6 shrink-0 bg-cardBg border-t border-gray-800 pt-4">
+            <div class="flex justify-between items-center mb-4"><span class="text-xl font-bold text-white">Total</span><span class="text-2xl font-bold text-primary" id="cartTotal">₹0.00</span></div>
+            
+            <div id="cartSalesOptions">
+                <div class="flex gap-2 mb-4">
+                    <button onclick="autoFillPaid('full')" class="bg-gray-800 text-white text-xs px-3 py-2 rounded-lg flex-1 border border-gray-700 active:bg-gray-700 transition-colors">Full Cash</button>
+                    <button onclick="autoFillPaid('zero')" class="bg-gray-800 text-white text-xs px-3 py-2 rounded-lg flex-1 border border-gray-700 active:bg-gray-700 transition-colors">Full Credit</button>
+                </div>
+                <div class="mb-5">
+                    <label class="text-[10px] text-textMuted ml-1 mb-1 block">Amount Paid (₹)</label>
+                    <div class="bg-appBg border border-gray-800 rounded-xl p-3 flex items-center gap-2 focus-within:border-primary transition-colors">
+                        <span class="text-primary font-bold">₹</span>
+                        <input type="number" id="cartAmountPaid" class="bg-transparent text-white font-bold text-lg w-full outline-none">
+                    </div>
+                </div>
+            </div>
+
+            <div id="cartPurchaseOptions" class="hidden mb-5 text-center">
+                <p class="text-xs text-accentOrange bg-accentOrange/10 p-3 rounded-lg border border-accentOrange/30">Purchases are recorded as Credit. They do not reduce Cash in Hand.</p>
+            </div>
+
+            <button onclick="processCheckout()" id="btnProcessCheckout" class="w-full bg-primary text-appBg font-extrabold py-4 rounded-xl text-lg shadow-lg">CONFIRM CHECKOUT</button>
+        </div>
+    </div>
+
+    <div id="txModal" class="fixed inset-x-0 bottom-0 bg-cardBg rounded-t-[30px] z-50 p-6 modal-sheet">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-bold text-white" id="txTitle">Transaction</h2>
+            <button onclick="closeAllModals()" class="text-gray-400 bg-gray-800 rounded-full w-8 h-8 flex items-center justify-center text-xl font-bold">✕</button>
+        </div>
+        <input type="hidden" id="txType">
+        <div class="space-y-4 mb-6">
+            <div id="txPartyContainer">
+                <label class="text-[10px] text-textMuted block mb-1">Select Supplier</label>
+                <select id="txParty" class="w-full bg-appBg border border-gray-800 rounded-xl p-4 text-white outline-none"></select>
+            </div>
+            <div>
+                <label class="text-[10px] text-textMuted block mb-1">Amount (₹)</label>
+                <input type="number" id="txAmount" onfocus="this.value=''" class="w-full bg-appBg border border-gray-800 rounded-xl p-4 text-white outline-none font-bold">
+            </div>
+        </div>
+        <button onclick="saveTx()" class="w-full bg-primary text-appBg py-4 rounded-xl font-bold">Record Transaction</button>
+    </div>
+
+    <div id="editCategoryModal" class="fixed inset-x-0 bottom-0 bg-cardBg rounded-t-[30px] z-50 p-6 modal-sheet">
+        <div class="flex justify-between items-center mb-6"><h2 class="text-xl font-bold text-white">Edit Category</h2><button onclick="deleteCategory()" id="btnDelCat" class="text-accentRed font-bold text-sm hidden">Delete</button></div>
+        <input type="hidden" id="ecId">
+        <div class="space-y-4 mb-6"><input type="text" id="ecName" placeholder="Category Name" class="w-full bg-appBg border border-gray-800 rounded-xl p-4 text-white outline-none"></div>
+        <div class="flex gap-4"><button onclick="closeAllModals()" class="w-1/3 bg-gray-800 text-white py-4 rounded-xl font-bold">Cancel</button><button onclick="saveCategory()" class="w-2/3 bg-primary text-appBg py-4 rounded-xl font-bold">Save Category</button></div>
+    </div>
+
+    <div id="editPartyModal" class="fixed inset-x-0 bottom-0 bg-cardBg rounded-t-[30px] z-50 p-6 modal-sheet">
+        <div class="flex justify-between items-center mb-6"><h2 class="text-xl font-bold text-white" id="epTitle">Edit Party</h2><button onclick="deleteParty()" id="btnDelParty" class="text-accentRed font-bold text-sm hidden">Delete</button></div>
+        <input type="hidden" id="epId">
+        <div class="space-y-4 mb-6">
+            <input type="text" id="epName" placeholder="Party Name" class="w-full bg-appBg border border-gray-800 rounded-xl p-4 text-white outline-none">
+            <div id="epCatContainer"><label class="text-[10px] text-textMuted ml-1 block mb-1">Category</label><select id="epCategory" class="w-full bg-appBg border border-gray-800 rounded-xl p-4 text-white outline-none"></select></div>
+            <div><label class="text-[10px] text-textMuted ml-1 block mb-1">Opening Balance (₹)</label><input type="number" id="epBalance" placeholder="0.00" onfocus="this.value=''" class="w-full bg-appBg border border-gray-800 rounded-xl p-4 text-white outline-none"></div>
+        </div>
+        <div class="flex gap-4"><button onclick="closeAllModals()" class="w-1/3 bg-gray-800 text-white py-4 rounded-xl font-bold">Cancel</button><button onclick="saveParty()" class="w-2/3 bg-primary text-appBg py-4 rounded-xl font-bold">Save Party</button></div>
+    </div>
+
+    <div id="editItemModal" class="fixed inset-x-0 bottom-0 bg-cardBg rounded-t-[30px] z-50 p-6 modal-sheet">
+        <div class="flex justify-between items-center mb-6"><h2 class="text-xl font-bold text-white">Edit Item</h2><button onclick="deleteItem()" id="btnDelItem" class="text-accentRed font-bold text-sm hidden">Delete</button></div>
+        <input type="hidden" id="eiId">
+        <div class="space-y-4 mb-6">
+            <input type="text" id="eiName" placeholder="Item Name" class="w-full bg-appBg border border-gray-800 rounded-xl p-4 text-white outline-none">
+            <input type="text" id="eiImg" placeholder="Image Filename (e.g., item1.jpg)" class="w-full bg-appBg border border-gray-800 rounded-xl p-4 text-white outline-none">
+            <div class="grid grid-cols-2 gap-2">
+                <div><label class="text-[10px] text-textMuted ml-1">Sell Price (₹)</label><input type="number" id="eiPrice" onfocus="this.value=''" class="w-full bg-appBg border border-gray-800 rounded-xl p-4 text-white outline-none"></div>
+                <div><label class="text-[10px] text-textMuted ml-1">Cost (₹)</label><input type="number" id="eiCost" onfocus="this.value=''" class="w-full bg-appBg border border-gray-800 rounded-xl p-4 text-white outline-none"></div>
+            </div>
+            <div><label class="text-[10px] text-textMuted ml-1">Stock Qty</label><input type="number" id="eiStock" onfocus="this.value=''" class="w-full bg-appBg border border-gray-800 rounded-xl p-4 text-white outline-none"></div>
+        </div>
+        <div class="flex gap-4"><button onclick="closeAllModals()" class="w-1/3 bg-gray-800 text-white py-4 rounded-xl font-bold">Cancel</button><button onclick="saveItem()" class="w-2/3 bg-primary text-appBg py-4 rounded-xl font-bold">Save Item</button></div>
+    </div>
+
+    <div id="specialRatesModal" class="fixed inset-x-0 bottom-0 bg-cardBg rounded-t-[30px] z-50 modal-sheet h-[80vh] flex flex-col">
+        <div class="p-5 flex justify-between items-center shrink-0 border-b border-gray-800/50"><h2 class="text-xl font-bold text-white" id="srTitle">Special Rates</h2><button onclick="closeAllModals()" class="text-gray-400 bg-gray-800 rounded-full w-8 h-8 flex items-center justify-center text-xl font-bold">✕</button></div>
+        <div id="srList" class="flex-1 overflow-y-auto p-4 space-y-3 hide-scroll"></div>
+    </div>
+
+    <div id="editLogModal" class="fixed inset-x-0 bottom-0 bg-cardBg rounded-t-[30px] z-50 p-6 modal-sheet">
+        <div class="flex justify-between items-center mb-6"><h2 class="text-xl font-bold text-white" id="elTitle">Modify Record</h2><button onclick="closeAllModals()" class="text-gray-400 bg-gray-800 rounded-full w-8 h-8 flex items-center justify-center text-xl font-bold">✕</button></div>
+        <input type="hidden" id="elId">
+        <div class="space-y-4 mb-6">
+            <div class="bg-appBg border border-gray-800 rounded-xl p-4 text-textMuted text-sm" id="elDesc"></div>
+            <div><label class="text-[10px] text-textMuted ml-1 block mb-1">Date</label><input type="date" id="elDate" class="w-full bg-appBg border border-gray-800 rounded-xl p-4 text-white outline-none"></div>
+            <div>
+                <label class="text-[10px] text-textMuted ml-1 block mb-1">Total Transaction Amount (₹)</label>
+                <input type="number" id="elAmount" onfocus="this.value=''" class="w-full bg-appBg border border-gray-800 rounded-xl p-4 text-white outline-none font-bold text-lg">
+            </div>
+        </div>
+        <button onclick="saveLogEdit()" class="w-full bg-primary text-appBg py-4 rounded-xl font-bold">Update Ledger</button>
+    </div>
+
+    <script>
+        // --- 1. CORE & DATA ---
+        const sanitize = str => str.replace(/[&<>'"]/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char]));
+        
+        const defaultDb = {
+            categories: [ { id: 'cat_ret', name: 'Retail' }, { id: 'cat_who', name: 'Wholesale' } ],
+            items: [
+                { id: 'i1', name: 'Milk 500ml', price: 35, cost: 28, stock: 10, img: 'item1.jpg' },
+                { id: 'i2', name: 'Foxtail Millet', price: 80, cost: 60, stock: 45, img: 'item2.jpg' }
+            ],
+            parties: [
+                { id: 'walk_in', name: 'Walk-in Customer', role: 'customer', categoryId: 'none', balance: 0, rates: {} },
+                { id: 'c1', name: 'athira', role: 'customer', categoryId: 'cat_ret', balance: 135, rates: {} },
+                { id: 'c2', name: 'ramya', role: 'customer', categoryId: 'cat_who', balance: 270, rates: {} },
+                { id: 's1', name: 'Arokya Agency', role: 'supplier', categoryId: 'none', balance: 0, rates: {} }
+            ],
+            logs: [], finances: { cash: 0, profit: 0, receivable: 0, payable: 0, expenses: 0 }
+        };
+
+        let db = JSON.parse(localStorage.getItem('posStoreDb_v7')) || defaultDb;
+        const saveDb = () => localStorage.setItem('posStoreDb_v7', JSON.stringify(db));
+
+        let state = { 
+            saleCart: {}, purCart: {}, 
+            posCategory: 'all', posCustomer: 'walk_in', purSupplier: '', 
+            mgmtTab: 'items', editSrId: null, activeCartType: 'sale',
+            spmMode: 'sale'
+        };
+
+        function initApp() {
+            document.getElementById('rectDate').value = new Date().toISOString().split('T');
+            recalcFinances(); populateSelectors(); switchView('view-pos'); 
+        }
+
+        // --- 2. VIEW MANAGEMENT ---
+        function switchView(viewId) {
+            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active', 'active-flex'));
+            const target = document.getElementById(viewId);
+            if(['view-reports', 'view-management', 'view-receipts'].includes(viewId)) { target.classList.add('active-flex'); } 
+            else { target.classList.add('active'); }
+
+            document.getElementById('topCashCard').style.display = ['view-reports', 'view-receipts'].includes(viewId) ? 'none' : 'block';
+
+            document.querySelectorAll('.nav-btn').forEach(btn => { btn.classList.remove('text-primary'); btn.classList.add('text-textMuted'); });
+            const activeBtn = document.getElementById(`nav-${viewId}`);
+            if(activeBtn) { activeBtn.classList.remove('text-textMuted'); activeBtn.classList.add('text-primary'); }
+
+            if(viewId === 'view-pos') { populateSelectors(); filterPosCustomers(); }
+            if(viewId === 'view-purchase') updatePurGrid();
+            if(viewId === 'view-management') renderMgmtList();
+            if(viewId === 'view-receipts') { populateCategoryDropdown('rectCategory', true); renderBatchReceipts(); }
+            
+            document.getElementById('btnFabCart').classList.add('hidden'); document.getElementById('btnFabPurCart').classList.add('hidden');
+            if(viewId === 'view-pos') updateFabCart('sale'); if(viewId === 'view-purchase') updateFabCart('purchase');
+        }
+
+        function openModal(id) {
+            const ov = document.getElementById('overlay'); ov.classList.remove('hidden');
+            setTimeout(() => ov.classList.add('opacity-100'), 10);
+            document.getElementById(id).classList.add('modal-open');
+        }
+        function closeAllModals() {
+            document.querySelectorAll('.modal-sheet').forEach(el => el.classList.remove('modal-open'));
+            const ov = document.getElementById('overlay'); ov.classList.remove('opacity-100');
+            setTimeout(() => ov.classList.add('hidden'), 300);
+        }
+
+        // --- 3. FINANCE ENGINE ---
+        function recalcFinances() {
+            let rec = 0, pay = 0;
+            db.parties.forEach(p => { if(p.role === 'customer' && p.id !== 'walk_in') rec += p.balance; else if(p.role === 'supplier') pay += p.balance; });
+            db.finances.receivable = rec; db.finances.payable = pay; saveDb();
+            document.getElementById('lblCashInHand').innerText = `₹${db.finances.cash.toFixed(2)}`;
+            if(document.getElementById('repReceivable')) document.getElementById('repReceivable').innerText = `₹${db.finances.receivable.toFixed(2)}`;
+            if(document.getElementById('repPayable')) document.getElementById('repPayable').innerText = `₹${db.finances.payable.toFixed(2)}`;
+            if(document.getElementById('repExpenses')) document.getElementById('repExpenses').innerText = `₹${db.finances.expenses.toFixed(2)}`;
+            if(document.getElementById('repProfit')) document.getElementById('repProfit').innerText = `₹${db.finances.profit.toFixed(2)}`;
+        }
+
+        function populateCategoryDropdown(elementId, addAllOption = false) {
+            const sel = document.getElementById(elementId);
+            let html = addAllOption ? `<option value="all">≡ All Categories</option>` : `<option value="none">None</option>`;
+            html += db.categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+            sel.innerHTML = html;
+        }
+
+        function populateSelectors() {
+            populateCategoryDropdown('posCategory', true); document.getElementById('posCategory').value = state.posCategory;
+            const suppliers = db.parties.filter(p=>p.role==='supplier');
+            if(suppliers.length && !state.purSupplier) state.purSupplier = suppliers.id;
+            updatePosCustomerUI(); updatePurSupplierUI();
+        }
+
+        // --- 4. SEARCHABLE PARTY MODALS (Customer/Supplier) ---
+        function openPartySearch(mode) {
+            state.spmMode = mode;
+            document.getElementById('spmTitle').innerText = mode === 'sale' ? 'Select Customer' : 'Select Supplier';
+            document.getElementById('spmSearch').value = '';
+            renderPartySearchList(); openModal('searchPartyModal');
+        }
+
+        function renderPartySearchList() {
+            const q = document.getElementById('spmSearch').value.toLowerCase();
+            const list = document.getElementById('spmList');
+            let parties = db.parties.filter(p => p.role === (state.spmMode === 'sale' ? 'customer' : 'supplier'));
+            
+            if(state.spmMode === 'sale' && state.posCategory !== 'all') {
+                parties = parties.filter(p => p.categoryId === state.posCategory || p.id === 'walk_in');
+            }
+            
+            parties = parties.filter(p => p.name.toLowerCase().includes(q));
+            
+            list.innerHTML = parties.map(p => `
+                <div onclick="selectPartySearch('${p.id}')" class="bg-appBg border border-gray-800 p-4 rounded-xl flex justify-between items-center active:bg-gray-700 cursor-pointer transition-colors">
+                    <div class="font-bold text-white">${p.name}</div>
+                    <div class="text-xs ${p.role==='supplier'?'text-accentOrange':'text-primary'} font-bold">Bal: ₹${p.balance.toFixed(2)}</div>
+                </div>
+            `).join('');
+            
+            if(parties.length === 0) list.innerHTML = `<div class="text-center text-textMuted py-4">No matching entries found.</div>`;
+        }
+
+        function selectPartySearch(id) {
+            if(state.spmMode === 'sale') { state.posCustomer = id; updatePosCustomerUI(); updatePosGrid(); } 
+            else { state.purSupplier = id; updatePurSupplierUI(); updatePurGrid(); }
+            closeAllModals();
+        }
+
+        function updatePosCustomerUI() {
+            const c = db.parties.find(p => p.id === state.posCustomer);
+            document.getElementById('posCustomerName').innerText = c ? c.name : 'Walk-in Customer';
+        }
+
+        function updatePurSupplierUI() {
+            const s = db.parties.find(p => p.id === state.purSupplier);
+            document.getElementById('purSupplierName').innerText = s ? s.name : 'Select Supplier';
+        }
+
+        function filterPosCustomers() {
+            state.posCategory = document.getElementById('posCategory').value;
+            state.posCustomer = 'walk_in'; updatePosCustomerUI(); updatePosGrid();
+        }
+
+        // --- 5. POS GRIDS & CART UX ---
+        function getSalePrice(itemId) {
+            const item = db.items.find(i => i.id === itemId);
+            const cust = db.parties.find(c => c.id === state.posCustomer);
+            if (cust && cust.rates && cust.rates[itemId] !== undefined) return cust.rates[itemId];
+            return item.price;
+        }
+
+        function renderItemCard(item, type, qty, price) {
+            const isSale = type === 'sale';
+            const colorClass = isSale ? 'primary' : 'accentOrange';
+            const bgHover = isSale ? 'border-gray-800' : 'border-accentOrange/30';
+            
+            return `
+            <div onclick="toggleCartItem('${type}', '${item.id}')" class="bg-cardBg rounded-2xl overflow-hidden relative active:scale-95 transition-transform border ${bgHover} h-44 flex flex-col cursor-pointer">
+                ${qty > 0 ? `<div class="absolute inset-0 bg-${colorClass}/90 z-20 flex flex-col items-center justify-center text-appBg"><div class="text-2xl font-black">✔</div><div class="text-xs font-bold uppercase tracking-widest mt-1">Selected</div></div>` : ''}
+                <div class="h-24 bg-white relative shrink-0">
+                    ${(isSale && item.stock <= 0) ? `<div class="absolute top-2 right-2 bg-accentPink text-white text-[9px] font-bold px-1.5 rounded uppercase z-10">OUT</div>` : ''}
+                    ${item.img ? `<img src="${item.img}" class="w-full h-full object-contain p-1" onerror="this.outerHTML='<div class=\\'w-full h-full flex items-center justify-center text-gray-400 text-xs bg-gray-800\\'>No Image</div>'">` : `<div class="w-full h-full flex items-center justify-center text-gray-400 text-xs bg-gray-800">No Image</div>`}
+                </div>
+                <div class="p-2 flex-1 flex flex-col justify-between">
+                    <h3 class="text-xs font-bold text-white leading-tight truncate">${item.name}</h3>
+                    <div class="flex justify-between items-end mt-1">
+                        <span class="text-sm font-black text-${colorClass}">₹${price.toFixed(0)}</span>
+                        <span class="text-[9px] text-textMuted">${isSale ? 'Qty' : 'Stock'}: ${item.stock}</span>
+                    </div>
+                </div>
+            </div>`;
+        }
+
+        function updatePosGrid() {
+            const grid = document.getElementById('posGrid');
+            if(db.items.length === 0) { grid.innerHTML = `<div class="col-span-2 md:col-span-3 text-center text-textMuted py-4">No items available.</div>`; return; }
+            grid.innerHTML = db.items.map(item => renderItemCard(item, 'sale', state.saleCart[item.id] || 0, getSalePrice(item.id))).join('');
+            updateFabCart('sale');
+        }
+
+        function updatePurGrid() {
+            const grid = document.getElementById('purGrid');
+            if(!state.purSupplier) { grid.innerHTML = `<div class="col-span-2 md:col-span-3 text-center text-textMuted py-4">Select a supplier first.</div>`; return; }
+            if(db.items.length === 0) { grid.innerHTML = `<div class="col-span-2 md:col-span-3 text-center text-textMuted py-4">No items available.</div>`; return; }
+            grid.innerHTML = db.items.map(item => renderItemCard(item, 'purchase', state.purCart[item.id] || 0, item.cost)).join('');
+            updateFabCart('purchase');
+        }
+
+        function toggleCartItem(type, id) {
+            const cart = type === 'sale' ? state.saleCart : state.purCart;
+            if (cart[id]) {
+                delete cart[id];
+            } else {
+                const item = db.items.find(i=>i.id===id);
+                if (type === 'sale' && 1 > item.stock) return alert(`Out of stock!`);
+                cart[id] = 1;
+            }
+            if (type === 'sale') updatePosGrid(); else updatePurGrid();
+        }
+
+        function setCartQty(type, id, qtyStr) {
+            const cart = type === 'sale' ? state.saleCart : state.purCart;
+            const item = db.items.find(i=>i.id===id);
+            const qty = parseInt(qtyStr) || 0;
+            if (type === 'sale' && qty > item.stock) { alert(`Only ${item.stock} in stock!`); renderCartModal(); return; }
+            if (qty <= 0) delete cart[id]; else cart[id] = qty;
+            renderCartModal(); if (type === 'sale') updatePosGrid(); else updatePurGrid();
+        }
+
+        function removeCartItem(type, id) {
+            const cart = type === 'sale' ? state.saleCart : state.purCart; delete cart[id];
+            renderCartModal(); if (type === 'sale') updatePosGrid(); else updatePurGrid();
+        }
+
+        function updateFabCart(type) {
+            const cart = type === 'sale' ? state.saleCart : state.purCart;
+            const fab = document.getElementById(type === 'sale' ? 'btnFabCart' : 'btnFabPurCart');
+            const totalQty = Object.values(cart).reduce((a,b)=>a+b, 0);
+            if(totalQty > 0) { fab.classList.remove('hidden'); document.getElementById(type === 'sale' ? 'fabQty' : 'fabPurQty').innerText = totalQty; } 
+            else fab.classList.add('hidden');
+        }
+
+        function openCart(type) { 
+            state.activeCartType = type; 
+            document.getElementById('cartAmountPaid').value = ''; // Always empty on open
+            renderCartModal(); 
+            openModal('cartModal'); 
+        }
+
+        function autoFillPaid(type) {
+            const isSale = state.activeCartType === 'sale'; const cart = isSale ? state.saleCart : state.purCart;
+            let total = 0; Object.entries(cart).forEach(([id, qty]) => total += (isSale ? getSalePrice(id) : db.items.find(i=>i.id===id).cost) * qty);
+            document.getElementById('cartAmountPaid').value = type === 'full' ? total : '';
+        }
+
+        function renderCartModal() {
+            const isSale = state.activeCartType === 'sale'; const cart = isSale ? state.saleCart : state.purCart;
+            const primaryClass = isSale ? 'text-primary' : 'text-accentOrange';
+            
+            document.getElementById('cartTitle').innerText = isSale ? 'Sale Cart' : 'Purchase Cart';
+            const party = db.parties.find(c=>c.id===(isSale ? state.posCustomer : state.purSupplier));
+            document.getElementById('cartPartyName').innerText = party ? `For: ${party.name}` : '';
+            document.getElementById('cartSalesOptions').style.display = isSale ? 'block' : 'none';
+            document.getElementById('cartPurchaseOptions').style.display = isSale ? 'none' : 'block';
+            document.getElementById('btnProcessCheckout').className = `w-full ${isSale?'bg-primary':'bg-accentOrange'} text-appBg font-extrabold py-4 rounded-xl text-lg shadow-lg mt-2`;
+            document.getElementById('cartTotal').className = `text-2xl font-bold ${primaryClass}`;
+
+            let total = 0; const list = document.getElementById('cartItemsList');
+            list.innerHTML = Object.entries(cart).map(([id, qty]) => {
+                const item = db.items.find(i=>i.id===id); const price = isSale ? getSalePrice(id) : item.cost; total += price*qty;
+                return `
+                <div class="bg-appBg p-2 rounded-lg flex items-center border border-gray-800">
+                    <div class="flex-1 truncate pr-2">
+                        <div class="text-sm font-bold truncate">${item.name}</div><div class="text-[10px] text-textMuted">@ ₹${price}</div>
+                    </div>
+                    <div class="w-16">
+                        <input type="number" value="${qty}" onfocus="this.value=''" onblur="if(this.value==='') this.value='${qty}';" onchange="setCartQty('${state.activeCartType}', '${id}', this.value)" class="w-full bg-cardBg border border-gray-700 text-white text-center font-bold outline-none rounded p-1.5 text-sm transition-colors focus:border-${isSale?'primary':'accentOrange'}">
+                    </div>
+                    <div class="w-20 text-right font-bold ${primaryClass} pr-2">₹${price*qty}</div>
+                    <div class="w-8 flex justify-end"><button onclick="removeCartItem('${state.activeCartType}', '${id}')" class="text-accentRed font-bold px-2 text-lg">✕</button></div>
+                </div>`;
+            }).join('');
+            
+            if(Object.keys(cart).length===0) list.innerHTML = `<div class="text-center text-textMuted py-4">Cart empty</div>`;
+            document.getElementById('cartTotal').innerText = `₹${total.toFixed(2)}`;
+        }
+
+        function processCheckout() {
+            const isSale = state.activeCartType === 'sale'; const cart = isSale ? state.saleCart : state.purCart;
+            if(Object.keys(cart).length===0) return;
+            
+            let total = 0, totalCost = 0;
+            Object.entries(cart).forEach(([id, q]) => { const i = db.items.find(x=>x.id===id); total += (isSale ? getSalePrice(id) : i.cost)*q; if(isSale) totalCost += i.cost*q; });
+            const party = db.parties.find(c=>c.id===(isSale ? state.posCustomer : state.purSupplier));
+            const dateStr = new Date().toISOString().split('T');
+
+            if(isSale) {
+                const paidInput = document.getElementById('cartAmountPaid').value;
+                const paid = paidInput === '' ? 0 : parseFloat(paidInput);
+                if(paid < 0) return alert("Invalid amount.");
+                let due = total - paid; if(due < 0) due = 0;
+
+                if(due > 0) { if(party.id==='walk_in') return alert("Walk-in cannot use credit. Enter full amount."); party.balance += due; }
+                db.finances.cash += (total - due); db.finances.profit += (total - totalCost); 
+                Object.entries(cart).forEach(([id, q]) => db.items.find(i=>i.id===id).stock -= q);
+                db.logs.unshift({ id: Date.now(), type: 'Sale', party: party.name, amount: total, payMode: due > 0 ? (paid > 0 ? 'Partial' : 'Credit') : 'Cash', date: dateStr });
+                state.saleCart = {};
+            } else {
+                party.balance += total; 
+                Object.entries(cart).forEach(([id, q]) => db.items.find(i=>i.id===id).stock += q);
+                db.logs.unshift({ id: Date.now(), type: 'Purchase', party: party.name, amount: total, payMode: 'Credit', date: dateStr });
+                state.purCart = {};
+            }
+
+            saveDb(); recalcFinances(); closeAllModals(); if(isSale) updatePosGrid(); else updatePurGrid(); alert("Transaction Successful!");
+        }
+
+        // --- 6. BATCH RECEIPT ---
+        function renderBatchReceipts() {
+            const catId = document.getElementById('rectCategory').value;
+            let customers = db.parties.filter(p => p.role === 'customer' && p.balance > 0);
+            if(catId !== 'all') customers = customers.filter(p => p.categoryId === catId);
+            
+            let totalDue = 0; const list = document.getElementById('batchReceiptList');
+            list.innerHTML = customers.map(c => { totalDue += c.balance;
+                return `
+                <div class="bg-[#1e1e2d] border border-gray-800 rounded-xl p-4 flex justify-between items-center shadow-md">
+                    <div><div class="font-bold text-white text-base">${c.name}</div><div class="text-accentOrange text-xs mt-1">Bal: ₹${c.balance.toFixed(2)}</div></div>
+                    <div class="flex items-center bg-[#2a2a3c] rounded p-2 border border-gray-700 w-32"><span class="text-primary mr-2">₹</span><input type="number" id="brec_${c.id}" onfocus="this.value=''" oninput="calcBatchTotal()" placeholder="Amount" class="bg-transparent text-white outline-none w-full text-sm font-bold"></div>
+                </div>`;
+            }).join('');
+            
+            if(customers.length === 0) list.innerHTML = `<div class="text-center text-gray-600 mt-10">No pending balances.</div>`;
+            document.getElementById('rectTotalDue').innerText = `₹${totalDue.toFixed(2)}`; calcBatchTotal();
+        }
+
+        function calcBatchTotal() {
+            let t = 0; document.querySelectorAll('input[id^="brec_"]').forEach(inp => t += parseFloat(inp.value)||0);
+            document.getElementById('rectTotalRecv').innerText = `₹${t.toFixed(2)}`;
+            const btn = document.getElementById('btnSaveRect');
+            if(t > 0) { btn.classList.replace('bg-gray-600', 'bg-primary'); btn.classList.replace('text-gray-300', 'text-appBg'); }
+            else { btn.classList.replace('bg-primary', 'bg-gray-600'); btn.classList.replace('text-appBg', 'text-gray-300'); }
+        }
+
+        function saveBatchReceipts() {
+            let entries = 0, totalAmount = 0; 
+            const date = document.getElementById('rectDate').value || new Date().toISOString().split('T'); 
+            const mode = document.getElementById('rectMode').value;
+
+            document.querySelectorAll('input[id^="brec_"]').forEach(inp => {
+                const amt = parseFloat(inp.value);
+                if(amt > 0) {
+                    const partyId = inp.id.replace('brec_', '');
+                    const party = db.parties.find(p => p.id === partyId);
+                    if(party) {
+                        party.balance -= amt; if(party.balance < 0) party.balance = 0;
+                        db.finances.cash += amt;
+                        db.logs.unshift({ id: Date.now()+entries, type: 'Receipt', party: party.name, amount: amt, payMode: mode, date: date });
+                        entries++; totalAmount += amt;
+                    }
+                }
+            });
+            if(entries === 0) return alert("Enter amounts first.");
+            saveDb(); recalcFinances(); renderBatchReceipts(); alert(`Saved ${entries} receipts totaling ₹${totalAmount.toFixed(2)}`);
+        }
+
+        // --- 7. MANAGEMENT CRUD ---
+        function switchMgmtTab(tab) {
+            state.mgmtTab = tab;
+            ['Items', 'Categories', 'Customers', 'Suppliers'].forEach(t => { document.getElementById(`tab${t}`).className = t.toLowerCase() === tab ? 'px-4 py-2 rounded-xl text-sm font-bold bg-primary text-appBg shrink-0' : 'px-4 py-2 rounded-xl text-sm font-bold text-textMuted shrink-0'; });
+            renderMgmtList();
+        }
+
+        function openDynamicAddModal() {
+            if(state.mgmtTab === 'items') openEditItemModal(); else if(state.mgmtTab === 'categories') openEditCategoryModal(); else openEditPartyModal();
+        }
+
+        function renderMgmtList() {
+            const list = document.getElementById('mgmtList'); const lbl = document.getElementById('mgmtCountLabel');
+            if(state.mgmtTab === 'items') {
+                lbl.innerText = `Total Items: ${db.items.length}`;
+                list.innerHTML = db.items.map(i => `
+                    <div class="bg-cardBg p-4 rounded-xl border border-gray-800 flex justify-between items-center">
+                        <div class="flex items-center gap-3">
+                            ${i.img ? `<img src="${i.img}" class="w-10 h-10 object-cover rounded bg-white" onerror="this.outerHTML='<div class=\\'w-10 h-10 bg-gray-800 rounded\\'></div>'">` : `<div class="w-10 h-10 bg-gray-800 rounded"></div>`}
+                            <div><div class="font-bold text-white">${i.name}</div><div class="text-[10px] text-textMuted mt-1">Sale: ₹${i.price} | Cost: ₹${i.cost}</div></div>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <div class="text-right"><div class="text-xs text-textMuted">Stock</div><div class="font-bold text-primary">${i.stock}</div></div>
+                            <button onclick="openEditItemModal('${i.id}')" class="text-primary text-sm font-bold bg-appBg px-2 py-1 rounded border border-gray-700">Edit</button>
+                        </div>
+                    </div>`).join('');
+            } else if (state.mgmtTab === 'categories') {
+                lbl.innerText = `Total Categories: ${db.categories.length}`;
+                list.innerHTML = db.categories.map(c => `
+                    <div class="bg-cardBg p-4 rounded-xl border border-gray-800 flex justify-between items-center">
+                        <div class="font-bold text-white">${c.name}</div><button onclick="openEditCategoryModal('${c.id}')" class="text-primary text-sm font-bold bg-appBg px-2 py-1 rounded border border-gray-700">Edit</button>
+                    </div>`).join('');
+            } else {
+                const role = state.mgmtTab === 'customers' ? 'customer' : 'supplier'; const parties = db.parties.filter(p=>p.role===role && p.id!=='walk_in');
+                lbl.innerText = `Total ${state.mgmtTab}: ${parties.length}`;
+                list.innerHTML = parties.map(p => {
+                    const catName = p.categoryId && p.categoryId !== 'none' ? db.categories.find(c=>c.id===p.categoryId)?.name || '' : '';
+                    return `
+                    <div class="bg-cardBg p-4 rounded-xl flex justify-between items-center border border-gray-800">
+                        <div>
+                            <div class="text-white font-bold flex items-center gap-2">${p.name} ${catName ? `<span class="bg-gray-800 text-textMuted text-[9px] px-1.5 py-0.5 rounded border border-gray-700">${catName}</span>` : ''}</div>
+                            <div class="text-accentOrange text-xs mt-1">Bal: ₹${p.balance.toFixed(2)}</div>
+                        </div>
+                        <div class="flex gap-4">
+                            ${role==='customer' ? `<button onclick="openSrModal('${p.id}')" class="text-accentOrange text-sm font-bold bg-appBg px-2 py-1 rounded border border-gray-700">Rates</button>` : ''}
+                            <button onclick="openEditPartyModal('${p.id}')" class="text-primary text-sm font-bold bg-appBg px-2 py-1 rounded border border-gray-700">Edit</button>
+                        </div>
+                    </div>`
+                }).join('');
+            }
+        }
+
+        function openEditCategoryModal(id=null) {
+            const btnDel = document.getElementById('btnDelCat');
+            if(id) { const c = db.categories.find(x=>x.id===id); document.getElementById('ecId').value = c.id; document.getElementById('ecName').value = c.name; btnDel.classList.remove('hidden'); } 
+            else { document.getElementById('ecId').value = ''; document.getElementById('ecName').value = ''; btnDel.classList.add('hidden'); }
+            openModal('editCategoryModal');
+        }
+        function saveCategory() {
+            const name = sanitize(document.getElementById('ecName').value); if(!name.trim()) return alert("Name required.");
+            const id = document.getElementById('ecId').value || 'cat'+Date.now();
+            const existing = db.categories.find(c=>c.id===id);
+            if(existing) existing.name = name; else db.categories.push({id, name});
+            saveDb(); closeAllModals(); renderMgmtList(); populateSelectors();
+        }
+        function deleteCategory() { if(!confirm("Delete category?")) return; db.categories = db.categories.filter(c=>c.id !== document.getElementById('ecId').value); db.parties.forEach(p => { if(p.categoryId === document.getElementById('ecId').value) p.categoryId = 'none'; }); saveDb(); closeAllModals(); renderMgmtList(); populateSelectors(); }
+
+        function openEditPartyModal(id=null) {
+            populateCategoryDropdown('epCategory'); document.getElementById('epTitle').innerText = `Edit ${state.mgmtTab === 'customers' ? 'Customer' : 'Supplier'}`;
+            document.getElementById('epCatContainer').style.display = state.mgmtTab === 'customers' ? 'block' : 'none';
+            const btnDel = document.getElementById('btnDelParty');
+            if(id) {
+                const p = db.parties.find(x=>x.id===id); document.getElementById('epId').value = p.id; document.getElementById('epName').value = p.name; document.getElementById('epCategory').value = p.categoryId || 'none'; document.getElementById('epBalance').value = p.balance; btnDel.classList.remove('hidden');
+            } else { document.getElementById('epId').value = ''; document.getElementById('epName').value = ''; document.getElementById('epCategory').value = 'none'; document.getElementById('epBalance').value = ''; btnDel.classList.add('hidden'); }
+            openModal('editPartyModal');
+        }
+        function saveParty() {
+            const name = sanitize(document.getElementById('epName').value); if(!name.trim()) return alert("Name required.");
+            const id = document.getElementById('epId').value || 'p'+Date.now(); const bal = parseFloat(document.getElementById('epBalance').value)||0; const catId = state.mgmtTab === 'customers' ? document.getElementById('epCategory').value : 'none';
+            if(db.parties.find(p=>p.name.toLowerCase()===name.toLowerCase() && p.id!==id)) return alert("Name exists.");
+            const existing = db.parties.find(p=>p.id===id);
+            if(existing) { existing.name=name; existing.balance=bal; existing.categoryId=catId; } else db.parties.push({id, name, role: state.mgmtTab==='customers'?'customer':'supplier', categoryId: catId, balance:bal, rates:{}});
+            saveDb(); recalcFinances(); closeAllModals(); renderMgmtList(); populateSelectors();
+        }
+        function deleteParty() { if(!confirm("Delete party?")) return; db.parties = db.parties.filter(p=>p.id !== document.getElementById('epId').value); saveDb(); recalcFinances(); closeAllModals(); renderMgmtList(); populateSelectors(); }
+
+        function openEditItemModal(id=null) {
+            const btnDel = document.getElementById('btnDelItem');
+            if(id) {
+                const i = db.items.find(x=>x.id===id); document.getElementById('eiId').value = i.id; document.getElementById('eiName').value = i.name; document.getElementById('eiImg').value = i.img || ''; document.getElementById('eiPrice').value = i.price; document.getElementById('eiCost').value = i.cost || 0; document.getElementById('eiStock').value = i.stock; btnDel.classList.remove('hidden');
+            } else { document.getElementById('eiId').value = ''; document.getElementById('eiName').value = ''; document.getElementById('eiImg').value = ''; document.getElementById('eiPrice').value = ''; document.getElementById('eiCost').value = ''; document.getElementById('eiStock').value = ''; btnDel.classList.add('hidden'); }
+            openModal('editItemModal');
+        }
+        function saveItem() {
+            const name = sanitize(document.getElementById('eiName').value); if(!name.trim()) return alert("Name required.");
+            const img = sanitize(document.getElementById('eiImg').value); const id = document.getElementById('eiId').value || 'i'+Date.now();
+            const price = parseFloat(document.getElementById('eiPrice').value)||0; const cost = parseFloat(document.getElementById('eiCost').value)||0; const stock = parseFloat(document.getElementById('eiStock').value)||0;
+            const existing = db.items.find(i=>i.id===id);
+            if(existing) { existing.name=name; existing.img=img; existing.price=price; existing.cost=cost; existing.stock=stock; } else db.items.push({id, name, img, price, cost, stock});
+            saveDb(); closeAllModals(); renderMgmtList(); updatePosGrid(); updatePurGrid();
+        }
+        function deleteItem() { if(!confirm("Delete item?")) return; db.items = db.items.filter(i=>i.id !== document.getElementById('eiId').value); saveDb(); closeAllModals(); renderMgmtList(); updatePosGrid(); updatePurGrid(); }
+
+        function openSrModal(id) { state.editSrId = id; document.getElementById('srTitle').innerText = db.parties.find(p=>p.id===id).name; renderSrList(); openModal('specialRatesModal'); }
+        function renderSrList() {
+            const c = db.parties.find(x=>x.id===state.editSrId);
+            document.getElementById('srList').innerHTML = db.items.map(i => `
+                <div class="bg-appBg p-3 rounded-xl flex justify-between items-center border border-gray-800">
+                    <div><div class="font-bold text-sm text-white">${i.name}</div><div class="text-[10px] text-textMuted mt-1">Default MRP: ₹${i.price}</div></div>
+                    <div class="flex gap-2"><input type="number" id="sr_${i.id}" value="${c.rates[i.id]!==undefined ? c.rates[i.id] : ''}" onfocus="this.select()" placeholder="Rate" class="w-16 bg-cardBg text-white text-sm p-2 outline-none rounded font-bold border border-gray-700"><button onclick="saveSr('${i.id}')" class="bg-primary text-appBg px-3 rounded font-bold text-xs">OK</button></div>
+                </div>`).join('');
+        }
+        function saveSr(itemId) { const val = parseFloat(document.getElementById(`sr_${itemId}`).value); const c = db.parties.find(x=>x.id===state.editSrId); if(isNaN(val) || val < 0) delete c.rates[itemId]; else c.rates[itemId] = val; saveDb(); renderSrList(); }
+
+        // --- 8. GENERIC TRANSACTIONS (Expense/Payment) ---
+        function openTxModal(type) {
+            document.getElementById('txType').value = type; document.getElementById('txTitle').innerText = `Record ${type.charAt(0).toUpperCase()+type.slice(1)}`;
+            const pSel = document.getElementById('txParty');
+            if(type==='expense') { document.getElementById('txPartyContainer').style.display='none'; } else { document.getElementById('txPartyContainer').style.display='block'; pSel.innerHTML = db.parties.filter(p=>p.role==='supplier').map(c => `<option value="${c.id}">${c.name} (Bal: ₹${c.balance})</option>`).join(''); }
+            document.getElementById('txAmount').value = ''; openModal('txModal');
+        }
+        function saveTx() {
+            const type = document.getElementById('txType').value; const amt = parseFloat(document.getElementById('txAmount').value); if(isNaN(amt) || amt<=0) return alert("Valid amount required.");
+            const dateStr = new Date().toISOString().split('T');
+            if(type==='expense') { db.finances.expenses += amt; db.finances.cash -= amt; db.finances.profit -= amt; db.logs.unshift({ id: Date.now(), type: 'Expense', party: 'Internal', amount: amt, date: dateStr }); } 
+            else { const pid = document.getElementById('txParty').value; if(!pid) return alert("Select supplier."); const party = db.parties.find(p=>p.id===pid); party.balance -= amt; db.finances.cash -= amt; if(party.balance < 0) party.balance = 0; db.logs.unshift({ id: Date.now(), type: 'Payment', party: party.name, amount: amt, date: dateStr }); }
+            saveDb(); recalcFinances(); closeAllModals(); alert("Recorded successfully.");
+        }
+
+        // --- 9. REPORTS & LOG MODIFICATION ---
+        function showReportLog() {
+            document.getElementById('reportFilters').classList.add('hidden'); document.getElementById('reportLog').classList.remove('hidden');
+            const fType = document.getElementById('fltType').value; const logs = fType==='all' ? db.logs : db.logs.filter(l=>l.type===fType);
+            document.getElementById('logList').innerHTML = logs.map(l => {
+                let badgeColor = l.type === 'Sale' || l.type === 'Receipt' ? 'text-primary border-primary' : 'text-accentOrange border-accentOrange';
+                if(l.type === 'Expense') badgeColor = 'text-accentRed border-accentRed';
+                return `
+                <div class="bg-cardBg p-4 rounded-xl border border-gray-800 flex justify-between items-center">
+                    <div><div class="text-white font-bold text-sm">${l.type}</div><div class="text-xs text-textMuted">${l.date} • ${l.party}</div><button onclick="openEditLogModal(${l.id})" class="text-primary text-[10px] font-bold mt-2 uppercase bg-appBg px-2 py-1 rounded border border-gray-700">Modify Entry</button></div>
+                    <div class="text-right"><div class="text-white font-bold text-lg">₹${l.amount.toFixed(2)}</div>${l.payMode ? `<div class="border ${badgeColor} text-[9px] px-2 py-0.5 rounded mt-1 uppercase font-bold inline-block">${l.payMode}</div>` : ''}</div>
+                </div>`
+            }).join('');
+            if(logs.length===0) document.getElementById('logList').innerHTML = `<div class="text-center text-textMuted">No records found.</div>`;
+        }
+
+        function openEditLogModal(id) {
+            const log = db.logs.find(l => l.id === id); if(!log) return;
+            document.getElementById('elId').value = log.id; document.getElementById('elDesc').innerHTML = `Modifying <b>${log.type}</b> record for <b>${log.party}</b>.`; document.getElementById('elDate').value = log.date; document.getElementById('elAmount').value = log.amount;
+            openModal('editLogModal');
+        }
+
+        function saveLogEdit() {
+            const id = parseInt(document.getElementById('elId').value); const newDate = document.getElementById('elDate').value; const newAmount = parseFloat(document.getElementById('elAmount').value);
+            if(isNaN(newAmount) || newAmount < 0) return alert("Invalid amount.");
+            const log = db.logs.find(l => l.id === id); const delta = newAmount - log.amount; const party = db.parties.find(p => p.name === log.party);
+
+            if(log.type === 'Sale') { if(log.payMode === 'Credit' && party) party.balance += delta; else if (log.payMode !== 'Credit') db.finances.cash += delta; db.finances.profit += delta; } 
+            else if(log.type === 'Purchase') { if(party) party.balance += delta; } 
+            else if(log.type === 'Receipt') { if(party) { party.balance -= delta; if(party.balance < 0) party.balance = 0; } db.finances.cash += delta; } 
+            else if(log.type === 'Payment') { if(party) { party.balance -= delta; if(party.balance < 0) party.balance = 0; } db.finances.cash -= delta; } 
+            else if(log.type === 'Expense') { db.finances.cash -= delta; db.finances.profit -= delta; db.finances.expenses += delta; }
+
+            log.date = newDate; log.amount = newAmount; saveDb(); recalcFinances(); closeAllModals(); showReportLog(); alert("Record updated successfully.");
+        }
+
+        function exportBackup() {
+            const blob = new Blob([JSON.stringify(db)], {type: "application/json"});
+            const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `store_backup_${new Date().toISOString().split('T')}.json`;
+            a.click(); URL.revokeObjectURL(url);
+        }
+
+        function resetTransactions() {
+            if(!confirm("DANGER: This will delete ALL transactions, reset Cash to 0, and clear all Customer/Supplier balances. Items and Categories will be kept. Proceed?")) return;
+            const check = prompt("Type YES to confirm reset:"); if(check !== "YES") return alert("Reset cancelled.");
+            db.logs = []; db.finances = { cash: 0, profit: 0, receivable: 0, payable: 0, expenses: 0 }; db.parties.forEach(p => p.balance = 0);
+            saveDb(); recalcFinances(); alert("All transactions and balances have been reset."); location.reload();
+        }
+
+        document.addEventListener('DOMContentLoaded', initApp);
+    </script>
+</body>
+</html>
