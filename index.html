@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Fresh Basket — Order Online</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+<style>
+  /* ============================================================
+     BASE / RESET
+  ============================================================ */
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    width: 100%;
+    max-width: 100vw;
+    overflow-x: hidden;
+    background: #FBF6EC;
+  }
+  body {
+    font-family: 'Nunito', sans-serif;
+    font-weight: 800;
+    color: #1B2E1F;
+    padding-bottom: 40px;
+  }
+  h1, h2, h3, button, input, select, th, td, a, p, span, label {
+    font-weight: 800;
+  }
+  img { max-width: 100%; display: block; }
+
+  /* ============================================================
+     HEADER
+  ============================================================ */
+  .shop-header {
+    background: linear-gradient(135deg, #1B5E3A 0%, #2E7D4F 55%, #3E9A63 100%);
+    padding: 18px 16px 22px;
+    position: relative;
+    overflow: hidden;
+  }
+  .shop-header::after {
+    content: "";
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 10px;
+    background: repeating-linear-gradient(-45deg, #F2A93B 0 10px, #E8892B 10px 20px);
+  }
+  .header-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .logo-badge {
+    width: 52px; height: 52px;
+    min-width: 52px;
+    border-radius: 50%;
+    background: #FBF6EC;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26px;
+    border: 3px solid #F2A93B;
+  }
+  .shop-title {
+    font-family: 'Baloo 2', sans-serif;
+    font-weight: 800;
+    color: #FBF6EC;
+    font-size: 24px;
+    line-height: 1.1;
+    letter-spacing: 0.3px;
+  }
+  .shop-subtitle {
+    color: #E4F5E9;
+    font-size: 12.5px;
+    font-weight: 800;
+    margin-top: 2px;
+  }
+
+  /* Marquee ad */
+  .ad-strip {
+    margin-top: 14px;
+    background: #143824;
+    border: 2px dashed #F2A93B;
+    border-radius: 8px;
+    overflow: hidden;
+    white-space: nowrap;
+    position: relative;
+  }
+  .ad-strip .ad-track {
+    display: inline-block;
+    padding: 8px 0;
+    animation: scroll-ad 16s linear infinite;
+  }
+  .ad-strip span {
+    color: #FFDE9E;
+    font-weight: 900;
+    font-size: 13.5px;
+    padding: 0 30px;
+  }
+  @keyframes scroll-ad {
+    0%   { transform: translateX(0%); }
+    100% { transform: translateX(-50%); }
+  }
+
+  /* ============================================================
+     CATEGORY TABS
+  ============================================================ */
+  .cat-wrap {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding: 12px 12px 6px;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .cat-wrap::-webkit-scrollbar { display: none; }
+  .cat-btn {
+    flex: 0 0 auto;
+    background: #FFFFFF;
+    color: #1B5E3A;
+    border: 2.5px solid #1B5E3A;
+    border-radius: 20px;
+    padding: 8px 16px;
+    font-size: 13.5px;
+    font-weight: 800;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .cat-btn.active {
+    background: #1B5E3A;
+    color: #FFF5DC;
+    box-shadow: 0 3px 0 #0F3B22;
+  }
+
+  /* ============================================================
+     ITEM GRID
+  ============================================================ */
+  .section-title {
+    font-family: 'Baloo 2', sans-serif;
+    text-align: center;
+    color: #1B5E3A;
+    font-size: 17px;
+    margin: 10px 0 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .item-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    padding: 0 12px;
+  }
+  @media (min-width: 480px) {
+    .item-grid { grid-template-columns: repeat(3, 1fr); }
+  }
+  .item-card {
+    background: #FFFFFF;
+    border: 2px solid #E3D9C0;
+    border-radius: 10px;
+    padding: 8px;
+    text-align: center;
+    position: relative;
+  }
+  .item-img-wrap {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #F1EADA;
+    cursor: pointer;
+    border: 2px solid #D8CBA8;
+  }
+  .item-img-wrap img { width: 100%; height: 100%; object-fit: cover; }
+  .item-emoji {
+    width: 100%; height: 100%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 40px;
+  }
+  .item-name {
+    font-size: 13px;
+    color: #1B2E1F;
+    margin-top: 6px;
+    line-height: 1.15;
+  }
+  .item-price {
+    font-size: 12.5px;
+    color: #E8892B;
+    margin-top: 2px;
+  }
+  .qty-pill {
+    position: absolute;
+    top: 6px; right: 6px;
+    background: #E8892B;
+    color: #FFF;
+    font-size: 11px;
+    border-radius: 10px;
+    padding: 2px 7px;
+    display: none;
+  }
+  .qty-pill.show { display: inline-block; }
+  .tap-hint {
+    font-size: 10.5px;
+    color: #7C8F7C;
+    margin-top: 3px;
+  }
+
+  /* ============================================================
+     CART SECTION — Excel style
+  ============================================================ */
+  .cart-section {
+    margin: 22px 12px 0;
+  }
+  .cart-title {
+    text-align: center;
+    font-family: 'Baloo 2', sans-serif;
+    color: #1B5E3A;
+    font-size: 18px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .cart-table-wrap {
+    width: 100%;
+    overflow-x: auto;
+    border: 2px solid #1B2E1F;
+  }
+  table.cart-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #FFFFFF;
+    min-width: 340px;
+  }
+  table.cart-table th, table.cart-table td {
+    border: 1px solid #1B2E1F;
+    padding: 5px 4px;
+    font-size: 12.5px;
+    text-align: center;
+    color: #1B2E1F;
+  }
+  table.cart-table th {
+    background: #DDEFD9;
+    text-transform: uppercase;
+    font-size: 11.5px;
+  }
+  table.cart-table td.item-name-cell {
+    text-align: left;
+    padding-left: 6px;
+  }
+  table.cart-table tfoot td {
+    background: #FFF3D6;
+    font-size: 13.5px;
+  }
+  .empty-cart-row td {
+    padding: 14px 4px;
+    color: #8A8A8A;
+    font-size: 12.5px;
+  }
+  .remove-btn {
+    background: #C1443A;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    width: 20px; height: 20px;
+    font-size: 12px;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .whatsapp-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    margin-top: 14px;
+    background: #1FAE4B;
+    color: #FFFFFF;
+    border: none;
+    border-radius: 10px;
+    padding: 14px;
+    font-size: 15.5px;
+    font-weight: 900;
+    box-shadow: 0 4px 0 #0F7A31;
+    cursor: pointer;
+  }
+  .whatsapp-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #0F7A31; }
+  .whatsapp-btn svg { width: 20px; height: 20px; }
+
+  /* ============================================================
+     QUANTITY MODAL
+  ============================================================ */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(20,30,20,0.55);
+    display: none;
+    align-items: center; justify-content: center;
+    z-index: 100;
+    padding: 20px;
+  }
+  .modal-overlay.show { display: flex; }
+  .modal-box {
+    background: #FFFDF7;
+    border-radius: 14px;
+    border: 3px solid #1B5E3A;
+    width: 100%;
+    max-width: 300px;
+    padding: 18px;
+    text-align: center;
+  }
+  .modal-box h3 {
+    font-family: 'Baloo 2', sans-serif;
+    color: #1B5E3A;
+    font-size: 17px;
+    margin-bottom: 4px;
+  }
+  .modal-box .modal-unit {
+    font-size: 12px;
+    color: #7C8F7C;
+    margin-bottom: 12px;
+  }
+  .qty-input-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .qty-step {
+    width: 38px; height: 38px;
+    border-radius: 50%;
+    border: 2px solid #1B5E3A;
+    background: #fff;
+    color: #1B5E3A;
+    font-size: 20px;
+    cursor: pointer;
+  }
+  .qty-input-row input {
+    width: 70px;
+    text-align: center;
+    font-size: 18px;
+    padding: 8px 4px;
+    border: 2px solid #1B5E3A;
+    border-radius: 8px;
+    font-weight: 900;
+  }
+  .modal-actions {
+    display: flex;
+    gap: 8px;
+  }
+  .modal-actions button {
+    flex: 1;
+    padding: 10px;
+    border-radius: 8px;
+    border: none;
+    font-size: 13.5px;
+    cursor: pointer;
+  }
+  .modal-cancel { background: #E5E0D0; color: #4A4A3A; }
+  .modal-add { background: #E8892B; color: #fff; }
+
+  .footer-note {
+    text-align: center;
+    font-size: 11px;
+    color: #9AAA9A;
+    margin-top: 18px;
+    padding: 0 20px;
+  }
+  body { padding-bottom: 90px; } /* room so floating bar never covers content */
+
+  /* ============================================================
+     FLOATING STICKY CART BAR
+  ============================================================ */
+  .floating-cart {
+    position: fixed;
+    left: 12px; right: 12px; bottom: 12px;
+    background: #1B5E3A;
+    border-radius: 12px;
+    padding: 12px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.28);
+    z-index: 60;
+    cursor: pointer;
+    transform: translateY(120%);
+    opacity: 0;
+    transition: transform 0.25s ease, opacity 0.25s ease;
+  }
+  .floating-cart.show {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  .floating-cart .fc-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #FFF5DC;
+  }
+  .floating-cart .fc-count {
+    background: #F2A93B;
+    color: #1B2E1F;
+    border-radius: 50%;
+    width: 26px; height: 26px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px;
+  }
+  .floating-cart .fc-total {
+    font-size: 15px;
+  }
+  .floating-cart .fc-right {
+    color: #FFF5DC;
+    font-size: 13.5px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .floating-cart .fc-right svg {
+    width: 14px; height: 14px;
+  }
+
+  /* brief "added" flash on item card */
+  .item-card.just-added {
+    animation: added-flash 0.5s ease;
+  }
+  @keyframes added-flash {
+    0%   { box-shadow: 0 0 0 3px #1FAE4B; }
+    100% { box-shadow: 0 0 0 0 rgba(31,174,75,0); }
+  }
+</style>
+</head>
+<body>
+
+<!-- ================= HEADER ================= -->
+<header class="shop-header">
+  <div class="header-row">
+    <div class="logo-badge">🥕</div>
+    <div>
+      <div class="shop-title" id="shopTitle">Fresh Basket</div>
+      <div class="shop-subtitle" id="shopSubtitle">Farm-fresh vegetables, delivered daily</div>
+    </div>
+  </div>
+  <div class="ad-strip">
+    <div class="ad-track" id="adTrack"></div>
+  </div>
+</header>
+
+<!-- ================= CATEGORY TABS ================= -->
+<nav class="cat-wrap" id="catWrap"></nav>
+
+<!-- ================= ITEM GRID ================= -->
+<h2 class="section-title">Today's Fresh Picks</h2>
+<div class="item-grid" id="itemGrid"></div>
+
+<!-- ================= CART ================= -->
+<section class="cart-section">
+  <h2 class="cart-title">🧾 Your Order</h2>
+  <div class="cart-table-wrap">
+    <table class="cart-table">
+      <thead>
+        <tr>
+          <th style="width:34%;">Item Name</th>
+          <th style="width:16%;">Qty</th>
+          <th style="width:22%;">Price</th>
+          <th style="width:20%;">Total</th>
+          <th style="width:8%;"></th>
+        </tr>
+      </thead>
+      <tbody id="cartBody">
+        <tr class="empty-cart-row"><td colspan="5">No items yet — tap a vegetable above to add it</td></tr>
+      </tbody>
+      <tfoot>
+        <tr>
+          <td colspan="3" style="text-align:right;">GRAND TOTAL</td>
+          <td colspan="2" id="grandTotal">₹0</td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+
+  <button class="whatsapp-btn" id="sendOrderBtn">
+    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38a9.9 9.9 0 0 0 4.74 1.21h.01c5.46 0 9.91-4.45 9.91-9.91C21.96 6.45 17.5 2 12.04 2Zm5.8 14.13c-.24.68-1.4 1.3-1.93 1.38-.5.08-1.13.11-1.83-.11-.42-.13-.96-.31-1.65-.61-2.9-1.25-4.79-4.17-4.94-4.36-.14-.19-1.18-1.57-1.18-3 0-1.42.75-2.12 1.02-2.41.27-.29.58-.36.78-.36.2 0 .39 0 .56.01.18.01.42-.07.66.5.24.58.83 2 .9 2.15.07.15.12.32.02.51-.09.19-.14.31-.28.48-.14.17-.29.37-.42.5-.14.14-.28.29-.12.57.16.28.72 1.19 1.55 1.93 1.06.95 1.96 1.24 2.24 1.38.28.14.44.12.6-.07.16-.19.68-.79.87-1.06.18-.27.36-.22.6-.13.24.09 1.53.72 1.79.85.26.13.44.19.5.3.06.11.06.63-.18 1.31Z"/></svg>
+    Send Order via WhatsApp
+  </button>
+</section>
+
+<p class="footer-note">Prices may vary slightly with market rates. Tap an image to select quantity.</p>
+
+<!-- ================= FLOATING STICKY CART BAR ================= -->
+<div class="floating-cart" id="floatingCart">
+  <div class="fc-left">
+    <div class="fc-count" id="fcCount">0</div>
+    <div class="fc-total" id="fcTotal">₹0</div>
+  </div>
+  <div class="fc-right">
+    View Cart
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+  </div>
+</div>
+
+<!-- ================= QUANTITY MODAL ================= -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal-box">
+    <h3 id="modalItemName">Item</h3>
+    <div class="modal-unit" id="modalItemUnit">per kg</div>
+    <div class="qty-input-row">
+      <button class="qty-step" id="qtyMinus">−</button>
+      <input type="number" id="qtyInput" min="1" value="1" inputmode="numeric">
+      <button class="qty-step" id="qtyPlus">+</button>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-cancel" id="modalCancel">Cancel</button>
+      <button class="modal-add" id="modalAdd">Add to Cart</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =====================================================================
+   ================   CONFIGURATION AREA   ============================
+   Edit everything below to update your shop — items, prices,
+   categories, header text, and the daily ad. No other code needs
+   to be touched for daily updates.
+   ===================================================================== */
+
+// ---- SHOP / HEADER SETTINGS ----
+const SHOP_NAME     = "Fresh Basket";
+const SHOP_SUBTITLE = "Farm-fresh vegetables, delivered daily";
+
+// ---- RUNNING AD TEXT (edit daily) ----
+const AD_TEXT = "🥬 TODAY'S SPECIAL: Tomatoes ₹30/kg  •  Free delivery above ₹300  •  Fresh stock arrived this morning! 🥦";
+
+// ---- WHATSAPP NUMBER (with country code, no + or spaces) ----
+const WHATSAPP_NUMBER = "919876543210";
+
+// ---- CATEGORIES (max 5 shown as tabs; "All" is added automatically) ----
+const CATEGORIES = [
+  "Daily Needs",
+  
+];
+
+// ---- ITEMS ----
+// category must exactly match one of the CATEGORIES above.
+// image: filename inside the "images" folder (e.g. "tomato.jpg").
+//        Leave image as "" to show an emoji instead.
+const ITEMS = [
+  { id: 1,  name: "Tomato  6Kg - Rs100",        category: "Daily Needs",       price: 15, unit: "kg",  image: "tomato.jpg", emoji: "🍅" },
+  { id: 2,  name: "Big Onion  2.5Kg - Rs100",     category: "Daily Needs",     price: 40, unit: "kg",  image: "bigonion.jpg", emoji: "🥔" },
+  { id: 3,  name: "Small Onion  1.25Kg - Rs100",   category: "Daily Needs",     price: 80, unit: "kg",  image: "smallonion.jpg", emoji: "🧅" },
+  
+];
+
+/* =====================================================================
+   ================   END OF CONFIGURATION AREA   =====================
+   No changes needed below this line for daily updates.
+   ===================================================================== */
+
+// ---------------------------------------------------------------------
+// STATE
+// ---------------------------------------------------------------------
+let activeCategory = "All";
+let cart = {}; // { itemId: qty }
+let pendingItem = null;
+
+// ---------------------------------------------------------------------
+// INIT HEADER
+// ---------------------------------------------------------------------
+document.getElementById('shopTitle').textContent = SHOP_NAME;
+document.getElementById('shopSubtitle').textContent = SHOP_SUBTITLE;
+document.title = SHOP_NAME + " — Order Online";
+
+const adTrack = document.getElementById('adTrack');
+adTrack.innerHTML = `<span>${AD_TEXT}</span><span>${AD_TEXT}</span>`;
+
+// ---------------------------------------------------------------------
+// RENDER CATEGORY TABS
+// ---------------------------------------------------------------------
+const catWrap = document.getElementById('catWrap');
+function renderCategories() {
+  const allCats = ["All", ...CATEGORIES.slice(0, 5)];
+  catWrap.innerHTML = allCats.map(cat => `
+    <button class="cat-btn ${cat === activeCategory ? 'active' : ''}" data-cat="${cat}">${cat}</button>
+  `).join('');
+  catWrap.querySelectorAll('.cat-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      activeCategory = btn.dataset.cat;
+      renderCategories();
+      renderItems();
+    });
+  });
+}
+
+// ---------------------------------------------------------------------
+// RENDER ITEM GRID
+// ---------------------------------------------------------------------
+const itemGrid = document.getElementById('itemGrid');
+function renderItems() {
+  const filtered = activeCategory === "All"
+    ? ITEMS
+    : ITEMS.filter(i => i.category === activeCategory);
+
+  itemGrid.innerHTML = filtered.map(item => {
+    const qty = cart[item.id] || 0;
+    const imgHtml = item.image
+      ? `<img src="images/${item.image}" alt="${item.name}">`
+      : `<div class="item-emoji">${item.emoji || '🥗'}</div>`;
+    return `
+      <div class="item-card">
+        <div class="item-img-wrap" data-id="${item.id}">
+          ${imgHtml}
+          <div class="qty-pill ${qty > 0 ? 'show' : ''}" id="pill-${item.id}">${qty} in cart</div>
+        </div>
+        <div class="item-name">${item.name}</div>
+        <div class="item-price">₹${item.price} / ${item.unit}</div>
+        <div class="tap-hint">Tap image to add</div>
+      </div>
+    `;
+  }).join('');
+
+  itemGrid.querySelectorAll('.item-img-wrap').forEach(el => {
+    el.addEventListener('click', () => openQtyModal(Number(el.dataset.id)));
+  });
+}
+
+// ---------------------------------------------------------------------
+// QUANTITY MODAL
+// ---------------------------------------------------------------------
+const modalOverlay   = document.getElementById('modalOverlay');
+const modalItemName  = document.getElementById('modalItemName');
+const modalItemUnit  = document.getElementById('modalItemUnit');
+const qtyInput        = document.getElementById('qtyInput');
+
+function openQtyModal(itemId) {
+  pendingItem = ITEMS.find(i => i.id === itemId);
+  if (!pendingItem) return;
+  modalItemName.textContent = pendingItem.name;
+  modalItemUnit.textContent = `₹${pendingItem.price} per ${pendingItem.unit}`;
+  qtyInput.value = cart[itemId] || 1;
+  modalOverlay.classList.add('show');
+}
+
+function closeQtyModal() {
+  modalOverlay.classList.remove('show');
+  pendingItem = null;
+}
+
+document.getElementById('modalCancel').addEventListener('click', closeQtyModal);
+document.getElementById('qtyMinus').addEventListener('click', () => {
+  qtyInput.value = Math.max(1, Number(qtyInput.value) - 1);
+});
+document.getElementById('qtyPlus').addEventListener('click', () => {
+  qtyInput.value = Number(qtyInput.value) + 1;
+});
+document.getElementById('modalAdd').addEventListener('click', () => {
+  const qty = Math.max(1, Number(qtyInput.value) || 1);
+  const addedId = pendingItem ? pendingItem.id : null;
+  if (pendingItem) {
+    cart[pendingItem.id] = qty;
+  }
+  closeQtyModal();
+  renderItems();
+  renderCart();
+  updateFloatingCart();
+  if (addedId !== null) flashItemCard(addedId);
+});
+
+function flashItemCard(itemId) {
+  const wrap = itemGrid.querySelector(`.item-img-wrap[data-id="${itemId}"]`);
+  const card = wrap ? wrap.closest('.item-card') : null;
+  if (!card) return;
+  card.classList.remove('just-added');
+  void card.offsetWidth; // restart animation
+  card.classList.add('just-added');
+}
+modalOverlay.addEventListener('click', (e) => {
+  if (e.target === modalOverlay) closeQtyModal();
+});
+
+// ---------------------------------------------------------------------
+// RENDER CART
+// ---------------------------------------------------------------------
+const cartBody   = document.getElementById('cartBody');
+const grandTotal = document.getElementById('grandTotal');
+
+function renderCart() {
+  const entries = Object.entries(cart).filter(([, qty]) => qty > 0);
+
+  if (entries.length === 0) {
+    cartBody.innerHTML = `<tr class="empty-cart-row"><td colspan="5">No items yet — tap a vegetable above to add it</td></tr>`;
+    grandTotal.textContent = "₹0";
+    return;
+  }
+
+  let total = 0;
+  cartBody.innerHTML = entries.map(([id, qty]) => {
+    const item = ITEMS.find(i => i.id === Number(id));
+    if (!item) return '';
+    const lineTotal = item.price * qty;
+    total += lineTotal;
+    return `
+      <tr>
+        <td class="item-name-cell">${item.name}</td>
+        <td>${qty} ${item.unit}</td>
+        <td>₹${item.price}</td>
+        <td>₹${lineTotal}</td>
+        <td><button class="remove-btn" data-id="${item.id}">×</button></td>
+      </tr>
+    `;
+  }).join('');
+
+  grandTotal.textContent = `₹${total}`;
+
+  cartBody.querySelectorAll('.remove-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      delete cart[Number(btn.dataset.id)];
+      renderItems();
+      renderCart();
+      updateFloatingCart();
+    });
+  });
+}
+
+// ---------------------------------------------------------------------
+// FLOATING STICKY CART BAR
+// ---------------------------------------------------------------------
+const floatingCart = document.getElementById('floatingCart');
+const fcCount = document.getElementById('fcCount');
+const fcTotal = document.getElementById('fcTotal');
+
+function updateFloatingCart() {
+  const entries = Object.entries(cart).filter(([, qty]) => qty > 0);
+  if (entries.length === 0) {
+    floatingCart.classList.remove('show');
+    return;
+  }
+  let itemCount = 0;
+  let total = 0;
+  entries.forEach(([id, qty]) => {
+    const item = ITEMS.find(i => i.id === Number(id));
+    if (!item) return;
+    itemCount += 1;
+    total += item.price * qty;
+  });
+  fcCount.textContent = itemCount;
+  fcTotal.textContent = `₹${total}`;
+  floatingCart.classList.add('show');
+}
+
+floatingCart.addEventListener('click', () => {
+  document.querySelector('.cart-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
+
+// ---------------------------------------------------------------------
+// SEND ORDER VIA WHATSAPP
+// ---------------------------------------------------------------------
+document.getElementById('sendOrderBtn').addEventListener('click', () => {
+  const entries = Object.entries(cart).filter(([, qty]) => qty > 0);
+  if (entries.length === 0) {
+    alert("Your cart is empty. Please add at least one item before sending your order.");
+    return;
+  }
+
+  let message = `🛒 *New Order — ${SHOP_NAME}*\n\n`;
+  let total = 0;
+  entries.forEach(([id, qty]) => {
+    const item = ITEMS.find(i => i.id === Number(id));
+    if (!item) return;
+    const lineTotal = item.price * qty;
+    total += lineTotal;
+    message += `• ${item.name} — Qty: ${qty} ${item.unit} — ₹${lineTotal}\n`;
+  });
+  message += `\n*Grand Total: ₹${total}*`;
+
+  const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
+  window.open(url, '_blank');
+});
+
+// ---------------------------------------------------------------------
+// BOOT
+// ---------------------------------------------------------------------
+renderCategories();
+renderItems();
+renderCart();
+updateFloatingCart();
+</script>
+</body>
+</html>
